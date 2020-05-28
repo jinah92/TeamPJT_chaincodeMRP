@@ -48,12 +48,15 @@ class Main extends Component {
     this.setState({ mediData: allMediData });
   };
 
+  // 표준코드에 속하는 모든 바코드 목록 조회
   showDetails = (target) => {
-    alert(target);
+    const mediCode = target;
+    alert('표준코드 : '+mediCode);
+    const sendParam = {mediCode};
     axios
-      .post('/showBarcode', target)
+      .post('/showBarcode', sendParam)
       .then((response) => {
-        console.log(response);
+        console.log(response.data);
       })
       .catch((err) => {
         console.log(err);
@@ -130,39 +133,6 @@ class Main extends Component {
     }
   };
 
-  // 모든 전문의약품의 최신 유통정보 조회요청
-  queryAll = () => {
-    axios
-      .get('/queryAll')
-      .then((response) => {
-        if (response.data.msg) {
-          alert(response.data.msg);
-        } else {
-          // console.log(response.data.allInfo);
-
-          let result = JSON.parse(response.data.allInfo);
-          console.log(typeof result[0]);
-
-          let allComments = result.map((element) => {
-            return (
-              <tr key={element.Key}>
-                <td>{element.Key}</td>
-                <td>{element.Record.companyID}</td>
-                <td>{element.Record.targetID}</td>
-                <td>{element.Record.state}</td>
-                <td>{element.Record.time}</td>
-              </tr>
-            );
-          });
-          this.setState({ comments: allComments });
-          console.log(this.state.comments);
-        }
-      })
-      .catch((err) => {
-        console.log(err);
-      });
-  };
-
   // 특정 전문의약품의 모든 유통이력 조회요청
   historyForMedicine = () => {
     alert(this.barcodeQeury.value);
@@ -186,6 +156,20 @@ class Main extends Component {
       });
   };
 
+  // 하나의 바코드 정보로 유통이력 조회요청 (world state)
+  getBarcode = () => {
+    alert(this.barcodeInfo.value);
+    const barcode = { barcode: this.barcodeInfo.value };
+    axios
+     .post('/getBarcode', barcode)
+      .then((response) => {
+        console.log(response);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  }
+
   render() {
     return (
       <div>
@@ -205,24 +189,24 @@ class Main extends Component {
           <tbody>{this.state.mediData}</tbody>
         </table>
         <hr />
-        <button onClick={this.connect} disabled>
+        <button onClick={this.connect}>
           네트워크 연결
         </button>
         <br />
         <input
-          placeholder="(ex) MEDI1"
+          placeholder="barcode"
           ref={(ref) => {
             this.barcodeInput = ref;
           }}
         />
         <input
-          placeholder="(ex) COMPANY ID"
+          placeholder="companyCode"
           ref={(ref) => {
             this.companyIdInput = ref;
           }}
         />
         <input
-          placeholder="(ex) TARGET ID"
+          placeholder="targetCompanyCode"
           ref={(ref) => {
             this.targetIdInput = ref;
           }}
@@ -241,19 +225,19 @@ class Main extends Component {
         </button>
         <br />
         <input
-          placeholder="(ex) MEDI1"
+          placeholder="barcode"
           ref={(ref) => {
             this.barcodeUpdate = ref;
           }}
         />
         <input
-          placeholder="(ex) COMPANY ID"
+          placeholder="companyCode"
           ref={(ref) => {
             this.companyIdUpdate = ref;
           }}
         />
         <input
-          placeholder="(ex) TARGET ID"
+          placeholder="targetCompanyCode"
           ref={(ref) => {
             this.targetIdUpdate = ref;
           }}
@@ -272,17 +256,18 @@ class Main extends Component {
           전문의약품 유통정보 등록 (도매, 병원 및 약국)
         </button>
         <br />
-        <button onClick={this.queryAll}>모든 의약품 유통이력 조회</button>
         <br />
 
         <div>{this.state.comments}</div>
 
         <br />
         <input
-          placeholder="(ex) MEDI1"
+          placeholder="barcodeName"
           ref={(ref) => (this.barcodeQeury = ref)}
         />
-        <button onClick={this.historyForMedicine}>유통 History 조회</button>
+        <button onClick={this.historyForMedicine}>유통이력 보기</button>< br/>
+	<input placeholder="barcodeName" ref={(ref) => (this.barcodeInfo = ref)} />
+	<button onClick={this.getBarcode}>현재상태 보기</button>
       </div>
     );
   }

@@ -1,3 +1,6 @@
+const url = '70.12.113.182:9090';
+const axios = require('axios');
+
 const express = require('express');
 const router = express.Router();
 const fs = require('fs');
@@ -27,7 +30,7 @@ const walletPath = path.join(process.cwd(), 'wallet');
 const wallet = new FileSystemWallet(walletPath);
 
 // 체인코드
-const chainCode = 'history';
+const chainCode = 'babo';
 
 // 채널
 const channel = 'mychannel';
@@ -96,42 +99,6 @@ router.get('/connect', async (req, res) => {
       );
     }
     res.json({ msg: 'connected' });
-  } catch (err) {
-    console.log(err);
-  }
-});
-
-// 2. 모든 전문의약품의 최신 유통정보 조회
-router.get('/queryAll', async (req, res) => {
-  try {
-    const userExists = await wallet.exists('user1');
-    if (!userExists) {
-      console.log(
-        'An identity for the user "user1" does not exist in the wallet'
-      );
-      await res.json({ msg: '연결부터 해주세요' });
-      return;
-    }
-    console.log('Start : Qeury All Medicine Info');
-    // Create a new gateway for connecting to our peer node.
-    const gateway = new Gateway();
-    await gateway.connect(ccp, {
-      wallet,
-      identity: 'user1',
-      discovery: { enabled: false },
-    });
-    // Get the network (channel) our contract is deployed to.
-    const network = await gateway.getNetwork(channel);
-
-    // Get the contract from the network.
-    const contract = network.getContract(chainCode);
-
-    const result = await contract.evaluateTransaction('showAll', '');
-    console.log(
-      `Transaction has been evaluated, result is: ${result.toString()}`
-    );
-    console.log('End : Qeury All Medicine Info');
-    res.json({ allInfo: result.toString() });
   } catch (err) {
     console.log(err);
   }
@@ -261,6 +228,57 @@ router.post('/history', async (req, res) => {
   } catch (err) {
     console.log(err);
   }
+});
+
+// 하나의 바코드로 현재 유통상태 조회
+router.post('/getBarcode', async (req, res) => {
+  try {
+    const userExists = await wallet.exists('user1');
+    if (!userExists) {
+      console.log(
+        'An identity for the user "user1" does not exist in the wallet'
+      );
+      await res.json({ msg: '연결부터 해주세요' });
+      return;
+    }
+
+    // Create a new gateway for connecting to our peer node.
+    const gateway = new Gateway();
+    await gateway.connect(ccp, {
+      wallet,
+      identity: 'user1',
+      discovery: { enabled: false },
+    });
+
+    // Get the network (channel) our contract is deployed to.
+    const network = await gateway.getNetwork(channel);
+
+    // Get the contract from the network.
+    const contract = network.getContract(chainCode);
+
+    const result = await contract.evaluateTransaction(
+      'getBarcode',
+      `${req.body.barcode}`
+    );
+    const state = JSON.parse(result);
+    res.json({state});
+
+  } catch (err) {
+    console.log(err);
+  }
+});
+
+// 표준코드와 매핑되는 바코드 리스트를 조회
+router.post('/showBarcode', async(req, res)=> {
+   try{
+     const mediCode = req.body.mediCode;
+     const sendParam = {mediCode};
+     let result = await axios.post(`http://${url}/chaincode/barcodeList`, sendParam);
+     res.json({result});
+   } catch (err) {
+     console.log(err);
+   }
+
 });
 
 module.exports = router;
